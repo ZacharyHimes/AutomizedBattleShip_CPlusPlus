@@ -25,7 +25,7 @@ void PrintGrid(string grid[11][11], string gridName){
 }
 void checkSquare(string grid[11][11], int x, int y, string type){
     if(grid[x][y] != "~"){
-        cout <<"Please re-enter coordinates for your " <<type << " ship that do not overlap with another ship."<<endl;
+        cout <<"Please re-enter coordiantes for your " <<type << " ship that do not overlap with another ship."<<endl;
         exit(0);
     }
 }
@@ -35,7 +35,7 @@ int validBounds(string direction, int coordNum, int size, string type, string co
       //  cout << "The " << type << " cannot be placed at "<<coordinate<<" with a direction of " <<direction <<" please re-enter valid coordinates or direction." <<endl;
         return 0;
     }
-    if(direction == "VU" && coordNum == 0 ||direction == "VU" && coordNum == 1 ||direction == "VU" && coordNum == 2 && size > 2 ||
+    if(direction == "VU" && coordNum == 1 ||direction == "VU" && coordNum == 2 && size > 2 ||
        direction == "VU" && coordNum == 3 && size > 3 || direction == "VU" && coordNum == 4 && size > 4 ){
     //    cout << "The " << type << " cannot be placed at "<<coordinate<<" with a direction of " <<direction <<" please re-enter valid coordinates or direction." <<endl;
         return 0;
@@ -75,6 +75,13 @@ void gridSetUp(string grid[11][11], vector<Ship>shipPlacements){
        if(validBounds(direction, coordNum, size, type, coordinate) == 0) {
            exit(0);
        }
+        if(coordinate.size() == 3){
+            coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
+        }
+        else{
+            coordNum = coordinate[1]-48;
+        }
+
         if(coordinate[0] == 'A'){
             if(direction == "HL"){
                 for(int i = 0; i < size; i++){
@@ -477,17 +484,6 @@ void HumanPlayerShipInit(BattleFieldGrid& battleGrid){
     }
     gridSetUp(battleGrid.battleFieldGrid, computerShips);
 }
-bool searchVector(vector<string> search, string coordinate){
-    for(int i = 0; i < search.size(); i++){
-        if(search[i] == coordinate){
-            return true;
-        }
-    }
-    return false;
-}
-
-
-// right now we need to figure out how to test all coordinates before loading them into used coordinates vector. Alternative is loading them in and when I find a confilict, pop out all from that individual iteration (till i == 0)
 void ComputerPlayerShipInit(string grid[11][11]){
     vector<Ship> computerShipSetUp;
     vector<string> possiblDirections = {"HL", "HR", "VU", "VD"};
@@ -499,368 +495,180 @@ void ComputerPlayerShipInit(string grid[11][11]){
     int coordNum = -1;
      coordinate = "none";
      direction = "none";
-     string temp = "none";
-     bool loop = false;
 
-    while(validBounds(direction, coordNum, 5, "Carrier", coordinate)== 0) {
-        while(loop == false) {
-            srand((unsigned int) time(NULL));
-            ranNumber = to_string(2 + (rand() % 9));
-            ranLetter = 'A' + rand() % 10;
-            coordinate = ranLetter + ranNumber;
-            direction = possiblDirections[rand() % 4];
-            if (coordinate.size() == 3) {
-                coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
-            } else {
-                coordNum = coordinate[1] - 48;
-            }
-            if (validBounds(direction, coordNum, 5, "Carrier", coordinate) == 1) {
-                takenCoords.push_back(coordinate);
-                temp = coordinate;
-                for (int i = 1; i < 5; i++) {
-                    if (direction == "VU") {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 - i)));
-                    }
-                    if (direction == "VD") {
-                        takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                    }
-                    if (direction == "HR") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] + i);
-                        takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                    }
-                    if (direction == "HL") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] - i);
-                        takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                    }
-                    if (i ==4){
-                        loop = true;
-                    }
-                }
-            }
+    while(validBounds(direction, coordNum, 5, "Carrier", coordinate)== 0){
+        srand((unsigned int)time(NULL));
+        ranNumber = to_string(rand() % 10);
+        ranLetter = 'A' + rand() % 10;
+        coordinate = ranLetter + ranNumber;
+        direction = possiblDirections[rand() % 4];
+        if(coordinate.size() == 3){
+            coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
+        }
+        else{
+            coordNum = coordinate[1]-48;
+        }
+    }
+    takenCoords.push_back(coordinate);
+    for(int i = 1; i < 5; i++){
+        if(direction == "VU"){
+            takenCoords.push_back(coordinate[0]+to_string((coordinate[1]-48-i)));
+        }
+        if(direction == "VD"){
+            takenCoords.push_back(coordinate[0]+to_string((coordinate[1]-48+i)));
+        }
+        if(direction == "HR"){
+            coordinate[0] = static_cast<char>(coordinate[0] + 1);
+            takenCoords.push_back( coordinate[0]+ to_string((coordinate[1]-48)));
+        }
+        if(direction == "HL"){
+            coordinate[0] = static_cast<char>(coordinate[0] - 1);
+            takenCoords.push_back(coordinate[0] + to_string((coordinate[1]-48-i)));
         }
     }
     Ship carrier("Carrier", coordinate, direction, 5);
     computerShipSetUp.push_back(carrier);
-    direction = "none";
-    loop = false;
-    while(validBounds(direction, coordNum, 4, "BattleShip", coordinate)== 0) {
-        while(loop == false) {
-            srand((unsigned int) time(NULL));
-            ranNumber = to_string(2 + (rand() % 9));
-            ranLetter = 'A' + rand() % 10;
-            coordinate = ranLetter + ranNumber;
-            direction = possiblDirections[rand() % 4];
-            if (coordinate.size() == 3) {
+
+    while(std::find(takenCoords.begin(), takenCoords.end(), coordinate) != takenCoords.end()) {
+        direction = "none";
+        coordNum = -1;
+        while(validBounds(direction, coordNum, 4, "BattleShip", coordinate)!= 1){
+            srand((unsigned int)time(NULL));
+                ranNumber = to_string(rand() % 10);
+                ranLetter = 'A' + rand() % 10;
+                coordinate = ranLetter + ranNumber;
+                direction = possiblDirections[rand() % 4];
+            if(coordinate.size() == 3){
                 coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
-            } else {
-                coordNum = coordinate[1] - 48;
             }
-            if (validBounds(direction, coordNum, 4, "BattleShip", coordinate) == 1) {
-                takenCoords.push_back(coordinate);
-                temp = coordinate;
-                for (int i = 1; i < 4; i++) {
-                    if (direction == "VU") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 - i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 - i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "VD") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 + i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HR") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] + i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HL") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] - i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (i == 3){
-                        loop = true;
-                    }
-                }
+            else{
+                coordNum = coordinate[1]-48;
             }
+            }
+    }
+    takenCoords.push_back(coordinate);
+    for(int i = 0; i < 5; i++){
+        if(direction == "VU"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48-i)));
+        }
+        if(direction == "VD"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48+i)));
+        }
+        if(direction == "HR"){
+            takenCoords.push_back(to_string(coordinate[0]++)+to_string((coordinate[1]-48)));
+        }
+        if(direction == "HL"){
+            takenCoords.push_back(to_string(coordinate[0]--)+to_string((coordinate[1]-48-i)));
         }
     }
-
     Ship battleShip("BattleShip", coordinate, direction, 4);
     computerShipSetUp.push_back(battleShip);
-    direction = "none";
-    loop = false;
-    while(validBounds(direction, coordNum, 3, "Cruiser", coordinate)== 0) {
-        while(loop == false) {
-            srand((unsigned int) time(NULL));
-            ranNumber = to_string(2 + (rand() % 9));
+
+
+    while(std::find(takenCoords.begin(), takenCoords.end(), coordinate) != takenCoords.end()) {
+        direction = "none";
+        coordNum = -1;
+        while (validBounds(direction, coordNum, 3, "Cruiser", coordinate) != 1) {
+            srand((unsigned int)time(NULL));
+            ranNumber = to_string(rand() % 10);
             ranLetter = 'A' + rand() % 10;
             coordinate = ranLetter + ranNumber;
             direction = possiblDirections[rand() % 4];
-            if (coordinate.size() == 3) {
+            if(coordinate.size() == 3){
                 coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
-            } else {
-                coordNum = coordinate[1] - 48;
             }
-            if (validBounds(direction, coordNum, 3, "Cruiser", coordinate) == 1) {
-                takenCoords.push_back(coordinate);
-                temp = coordinate;
-                for (int i = 1; i < 3; i++) {
-                    if (direction == "VU") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 - i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 - i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "VD") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 + i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HR") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] + i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HL") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] - i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (i == 2){
-                        loop = true;
-                    }
-                }
+            else{
+                coordNum = coordinate[1]-48;
             }
         }
     }
+        takenCoords.push_back(coordinate);
+        for(int i = 0; i < 5; i++){
+            if(direction == "VU"){
+                takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48-i)));
+            }
+            if(direction == "VD"){
+                takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48+i)));
+            }
+            if(direction == "HR"){
+                takenCoords.push_back(to_string(coordinate[0]++)+to_string((coordinate[1]-48)));
+            }
+            if(direction == "HL"){
+                takenCoords.push_back(to_string(coordinate[0]--)+to_string((coordinate[1]-48-i)));
+            }
+        }
         Ship cruiser("Cruiser", coordinate, direction, 3);
         computerShipSetUp.push_back(cruiser);
+
+    while(std::find(takenCoords.begin(), takenCoords.end(), coordinate) != takenCoords.end()) {
         direction = "none";
-         loop = false;
-    while(validBounds(direction, coordNum, 3, "Submarine", coordinate)== 0) {
-        while(loop == false) {
-            srand((unsigned int) time(NULL));
-            ranNumber = to_string(2 + (rand() % 9));
+        coordNum = -1;
+        while (validBounds(direction, coordNum, 3, "Submarine", coordinate) != 1) {
+            srand((unsigned int)time(NULL));
+            ranNumber = to_string(rand() % 10);
             ranLetter = 'A' + rand() % 10;
             coordinate = ranLetter + ranNumber;
             direction = possiblDirections[rand() % 4];
-            if (coordinate.size() == 3) {
+            if(coordinate.size() == 3){
                 coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
-            } else {
-                coordNum = coordinate[1] - 48;
             }
-            if (validBounds(direction, coordNum, 3, "Submarine", coordinate) == 1) {
-                takenCoords.push_back(coordinate);
-                temp = coordinate;
-                for (int i = 1; i < 3; i++) {
-                    if (direction == "VU") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 - i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 - i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "VD") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 + i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HR") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] + i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HL") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] - i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (i == 2){
-                        loop = true;
-                    }
-                }
+            else{
+                coordNum = coordinate[1]-48;
             }
+        }
+    }
+    takenCoords.push_back(coordinate);
+    for(int i = 0; i < 5; i++){
+        if(direction == "VU"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48-i)));
+        }
+        if(direction == "VD"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48+i)));
+        }
+        if(direction == "HR"){
+            takenCoords.push_back(to_string(coordinate[0]++)+to_string((coordinate[1]-48)));
+        }
+        if(direction == "HL"){
+            takenCoords.push_back(to_string(coordinate[0]--)+to_string((coordinate[1]-48-i)));
         }
     }
     Ship submarine("Submarine", coordinate, direction, 3);
     computerShipSetUp.push_back(submarine);
-    direction = "none";
-    loop = false;
-    while(validBounds(direction, coordNum, 2, "Destroyer", coordinate)== 0) {
-        while(loop == false) {
-            srand((unsigned int) time(NULL));
-            ranNumber = to_string(2 + (rand() % 9));
+
+    while(std::find(takenCoords.begin(), takenCoords.end(), coordinate) != takenCoords.end()) {
+        direction = "none";
+        coordNum = -1;
+        while (validBounds(direction, coordNum, 2, "Destroyer", coordinate) != 1) {
+            srand((unsigned int)time(NULL));
+            ranNumber = to_string(rand() % 10);
             ranLetter = 'A' + rand() % 10;
             coordinate = ranLetter + ranNumber;
             direction = possiblDirections[rand() % 4];
-            if (coordinate.size() == 3) {
+            if(coordinate.size() == 3){
                 coordNum = 10; //subtracting 48 to realign with correct ASCII value when I convert int to char
-            } else {
-                coordNum = coordinate[1] - 48;
             }
-            if (validBounds(direction, coordNum, 2, "Destroyer", coordinate) == 1) {
-                takenCoords.push_back(coordinate);
-                temp = coordinate;
-                for (int i = 1; i < 2; i++) {
-                    if (direction == "VU") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 - i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 - i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "VD") {
-                        if ((searchVector(takenCoords, coordinate[0] + to_string((coordinate[1] - 48 + i)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HR") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] + i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(coordinate[0] + to_string((coordinate[1] - 48 + i)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (direction == "HL") {
-                        if (i == 0) { continue; }
-                        temp[0] = static_cast<char>(coordinate[0] - i);
-                        if ((searchVector(takenCoords, temp[0] + to_string((coordinate[1] - 48)))) == false) {
-                            takenCoords.push_back(temp[0] + to_string((coordinate[1] - 48)));
-                        } else {
-                            while (i != 0) {
-                                takenCoords.pop_back();
-                                i--;
-                            }
-                            loop = false;
-                            break;
-                        }
-                    }
-                    if (i == 1){
-                        loop = true;
-                    }
-                }
+            else{
+                coordNum = coordinate[1]-48;
             }
+        }
+    }
+        takenCoords.push_back(coordinate);
+    for(int i = 0; i < 5; i++){
+        if(direction == "VU"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48-i)));
+        }
+        if(direction == "VD"){
+            takenCoords.push_back(to_string(coordinate[0])+to_string((coordinate[1]-48+i)));
+        }
+        if(direction == "HR"){
+            takenCoords.push_back(to_string(coordinate[0]++)+to_string((coordinate[1]-48)));
+        }
+        if(direction == "HL"){
+            takenCoords.push_back(to_string(coordinate[0]--)+to_string((coordinate[1]-48-i)));
         }
     }
         Ship destroyer("Destroyer", coordinate, direction, 2);
         computerShipSetUp.push_back(destroyer);
-        direction = "none";
         gridSetUp(grid, computerShipSetUp);
 }
 
